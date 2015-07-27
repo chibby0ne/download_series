@@ -18,6 +18,8 @@ mkdir The_Wire
 cd The_Wire
 ```
 
+Then proceed to use the script:
+
 ```bash
 download_series.py $SERIES_NAME
 ```
