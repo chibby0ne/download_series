@@ -5,7 +5,18 @@ for the stream to load again the same frames and packets?
 
 Then this is the script for you.
 
+## Installation
+
+Run `./install.sh`
+
 ## Usage
+
+Create the folder where you want to download the series and move to that
+folder. For example:
+```bash
+mkdir The_Wire
+cd The_Wire
+```
 
 ```bash
 download_series.py $SERIES_NAME
