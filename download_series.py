@@ -16,23 +16,32 @@ import urllib2
 import sys
 import time
 
-SERIES = 'http://watch-series-tv.to/serie/'
+SERIES_STRING = '/serie/'
 HOMEPAGE = 'http://watch-series-tv.to'
 EPISODE_STRING = '/episode/'
 GORILLAVID_STRING = 'download_link_gorillavid.in'
-CALE_LINK = '/open/cale/'
 GORILLAVID_URL = 'http://gorillavid.in/'
 
 
 def main():
-    """ Downlaods complete series from watchseries
+    """ Downloads complete series from watchseries.
+    Steps:
+    1.
     """
 
     prefix = os.path.abspath('.')
     series_name = create_series_name()
+    # print "series name: " +series_name
     names_filename = prefix + '/names_' + series_name + '.txt'
     links_filename = prefix + '/links_' + series_name + '.txt'
-    real_url = create_url(SERIES, series_name)
+    # real_url = create_url(SERIES, series_name)
+    real_url = HOMEPAGE + SERIES_STRING + series_name
+    # print "url to navigate and scrape: " + real_url
+
+    """ Create download links if there isn't a links file or there is one but
+    wasn't created the day the script is running, or there isn't a name file
+    or there is one but wasn't created the day the script is running
+    """
     if (not os.path.isfile(links_filename)
             or os.path.isfile(links_filename)
             and not created_today(links_filename)
@@ -43,15 +52,19 @@ def main():
         series_link = watch_series_series_page.readlines()
         watch_series_series_page.close()
 
+        print "### inside create_list_episodes_links"
         episodes_list_links = create_list_episodes_links(series_link,
                 names_filename)
 
+        print "### inside create_gorillavid_links_list"
         gorillavid_list_links = create_gorillavid_links_list(
                 episodes_list_links)
 
+        print "### inside create_download_links"
         create_download_links(gorillavid_list_links,
                 links_filename)
 
+    print "### inside download_all_links"
     download_all_links(links_filename, names_filename)
 
 
@@ -82,71 +95,52 @@ def download_all_links(links_filename, names_filename):
 
     """
     with open(links_filename, 'r') as links_file:
-        links = links_file.readlines()
+        links = links_file.read().split('\n')
     # print links
 
     with open(names_filename, 'r') as names_file:
-        names = names_file.readlines()
+        names = names_file.read().split('\n')
     # print names
 
     for i in range(len(links)):
-        start_pos = names[i].find('/', 8) + 1
-        start_pos = names[i].find('/', start_pos) + 1
+        # getting filename
+        start_pos = names[i].rfind('/') + 1
         end_pos = names[i].find('.', start_pos)
-        filename = names[i][start_pos: end_pos]
+        filename = names[i][start_pos : end_pos]
 
-        # print filename
+        # getting extension
+        start_pos = links[i].rfind('.') + 1
+        fileformat = links[i][start_pos :]
 
-        pos = links[i].find('video')
-        start_pos = links[i].find('.', pos)
-        end_pos = links[i].find('\\', start_pos)
-
-        fileformat = links[i][start_pos: end_pos]
-        # print fileformat
-        # print links[i][:-1]
-
-
-        string = 'wget -c ' + links[i][:-1] + ' -O ' + filename + fileformat
+        string = 'wget -c ' + links[i] + ' -O ' + filename + fileformat
         print string
         os.system(string)
-
-    # for i in range(len(downloadable_links)):
-    #     start_pos = episodes_list_links[i].find('/', 8) + 1
-    #     start_pos = episodes_list_links[i].find('/', start_pos) + 1
-    #     end_pos = episodes_list_links[i].find('.', start_pos)
-    #     filename = episodes_list_links[i][start_pos: end_pos]
-
-
-    #     # pos = downloadable_links[i].find('video')
-    #     # start_pos = downloadable_links[i].find('.', pos)
-    #     # fileformat = downloadable_links[i][start_pos:]
-    #     pos = links[i].find('video')
-    #     start_pos = links[i].find('.', pos)
-    #     fileformat = links[i][start_pos:]
-
-
-
-    #     string = 'wget ' + links[i] + ' -O ' + filename+ fileformat
-    #     os.system(string)
 
 
 def create_download_links(episodes_list_links, links_filename):
     """ Create download links
 
     :episodes_list_links: list of links
-    :returns: list of downloadaable links
+    :returns: list of downloadable links
 
+    """
+
+    """
+    Create embed link using format knowledge of the links (i.e: every embed
+    link follows the same format)
     """
     links = []
     downloadable_links = []
     for i in range(len(episodes_list_links)):
-        start_pos = episodes_list_links[i].find('/', 8) + 1
+        start_pos = episodes_list_links[i].rfind('/') + 1
         value = episodes_list_links[i][start_pos: ]
         url = GORILLAVID_URL + 'embed-' + value + '-960x480.html'
         print url
         links.append(url)
 
-
+    """
+    Find the raw files' url, save them in the links_file and return list of them
+    """
     for i in range(len(links)):
         webpage = urllib2.urlopen(links[i])
         webpage_text = webpage.read()
@@ -175,33 +169,45 @@ def create_gorillavid_links_list(episodes_list_links):
     :returns: list
 
     """
+
+    """ Navigate to each episode page and look for the second gorillavid link
+    and get that link
+    """
     intermediate_links = []
     for i in range(len(episodes_list_links)):
 
-        # open link
         intermediate_webpage = urllib2.urlopen(episodes_list_links[i])
+        # print "for episode: " + episodes_list_links[i]
         intermediate_webpage_text = intermediate_webpage.read()
         intermediate_webpage.close()
 
-        # for i in range(len(intermediate_webpage_text)):
-            # print i
-        # print intermediate_webpage_text
-        # ignore first gorillavid link because it's normally not a complete epis
+
+        ## find first gorillavid link
         pos = intermediate_webpage_text.find(GORILLAVID_STRING)
         if pos != -1:
+            ## find second gorillavid link
             pos = intermediate_webpage_text.find(GORILLAVID_STRING, pos + 1)
             if pos != -1:
-                start_pos = intermediate_webpage_text.find(CALE_LINK, pos)
-                end_pos = intermediate_webpage_text.find('"', start_pos)
-                link = intermediate_webpage_text[start_pos:end_pos]
-                # print link
-                intermediate_links.append(create_url(HOMEPAGE, link))
+
+                """ get string for that gorillavid and attach it to the
+                homepage to build the next page's url
+                """
+                start_pos = intermediate_webpage_text.find('href="', pos)
+                end_pos = intermediate_webpage_text.find('"', start_pos +
+                        len('href="'))
+                link = intermediate_webpage_text[start_pos + len('href="') :
+                       end_pos]
+                intermediate_links.append(HOMEPAGE + link)
+                # print HOMEPAGE + link
 
 
     # print links
     for elem in intermediate_links:
         print elem
 
+    """ Navigate to each one of the links found in previous step links and get
+    the get the gorillavid links
+    """
     links = []
     for i in range(len(intermediate_links)):
 
@@ -216,6 +222,8 @@ def create_gorillavid_links_list(episodes_list_links):
 
     for elem in links:
         print elem
+
+    ### return the gorillavid urls links
     return links
 
 
@@ -232,7 +240,7 @@ def create_list_episodes_links(series_link, names_filename):
         while pos != -1:
             end_pos = series_link[i].find('"', pos)
             link = series_link[i][pos :end_pos]
-            links.add(create_url(HOMEPAGE, link))
+            links.add(HOMEPAGE + link)
             pos = series_link[i].find(EPISODE_STRING, end_pos)
     for elem in sorted(links):
         print elem
@@ -261,19 +269,5 @@ def create_series_name():
     return name
 
 
-
-def create_url(prefix, url):
-    """ Creates url from series name
-
-    :url: series name string
-    :returns: url string
-
-    """
-    # appending name to the prefix url
-    url = prefix + url
-    return url
-
-
 if __name__ == '__main__':
     main()
-
