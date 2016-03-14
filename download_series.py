@@ -24,8 +24,9 @@ EPISODE_STRING = '<a href="/episode/'
 GORILLAVID_STRING = 'download_link_gorillavid.in'
 DACLIPS_STRING = 'download_link_daclips.in'
 MOVPOD_STRING = 'download_link_movpod.in'
+VODLOCKER_STRING = 'download_link_vodlocker.in'
 
-DOMAINS = [ GORILLAVID_STRING, DACLIPS_STRING, MOVPOD_STRING ]
+DOMAINS = [ GORILLAVID_STRING, DACLIPS_STRING, MOVPOD_STRING, VODLOCKER_STRING ]
 
 ## vodlocker also works because the file: string is left in the main page
 
@@ -45,30 +46,24 @@ def main():
     wasn't created the day the script is running, or there isn't a name file
     or there is one but wasn't created the day the script is running
     """
-    if (not os.path.isfile(links_filename)
-            or os.path.isfile(links_filename)
-            and not created_today(links_filename)
-            or not os.path.isfile(names_filename)
-            or os.path.isfile(names_filename)
-            and not created_today(names_filename)):
+    if (created_today(links_filename) and created_today(names_filename)):
+        print "Downloading.."
+        download_all_links(links_filename, names_filename)
+    else:
         watch_series_series_page = urllib2.urlopen(real_url)
         series_link = watch_series_series_page.readlines()
         watch_series_series_page.close()
-
         print "Creating list of episodes links..."
         episodes_list_links = create_list_episodes_links(series_link,
                 names_filename)
-
         print "Creating list of video hosters' links..."
         gorillavid_list_links = create_gorillavid_links_list(
                 episodes_list_links)
-
         print "Creating download links..."
         create_download_links(gorillavid_list_links,
                 links_filename)
-
-    print "Downloading.."
-    download_all_links(links_filename, names_filename)
+        print "Downloading.."
+        download_all_links(links_filename, names_filename)
 
 def created_today(filename):
     """ Returns true if file was created today, otherwise false
@@ -77,10 +72,11 @@ def created_today(filename):
     return: boolean
 
     """
+    if not os.path.isfile(filename):
+        return False
     file_time = os.path.getmtime(filename)
     time_struct = time.localtime(file_time)
     today_date = time.localtime()
-
     if (time_struct.tm_year == today_date.tm_year
             and time_struct.tm_mon == today_date.tm_mon
             and time_struct.tm_mday == today_date.tm_mday):
