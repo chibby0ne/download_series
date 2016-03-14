@@ -70,6 +70,9 @@ Wire](https://en.wikipedia.org/wiki/The_Wire)
   etc..
 - Output prettier
 - Exit immediately 
+- Use the number of weeks of difference between the files with the links and
+  the current date to just search/crawl for the additional links after the
+current last
 
 
 ## Bugs
