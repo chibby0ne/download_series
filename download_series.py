@@ -16,6 +16,8 @@ import urllib2
 import sys
 import time
 import base64
+import argparse
+import re
 
 
 SERIES_STRING = '/serie/'
@@ -24,51 +26,103 @@ EPISODE_STRING = '<a href="/episode/'
 GORILLAVID_STRING = 'download_link_gorillavid.in'
 DACLIPS_STRING = 'download_link_daclips.in'
 MOVPOD_STRING = 'download_link_movpod.in'
+VODLOCKER_STRING = 'download_link_vodlocker.in'
 
-DOMAINS = [ GORILLAVID_STRING, DACLIPS_STRING, MOVPOD_STRING ]
+DOMAINS = [GORILLAVID_STRING, DACLIPS_STRING, MOVPOD_STRING, VODLOCKER_STRING]
 
 ## vodlocker also works because the file: string is left in the main page
 
+# def main():
+#     """ Downloads complete series from watchseries.
+#     """
+
+#     prefix = os.path.abspath('.')
+#     series_name, seasons = get_input()
+#     # series_name = create_series_name()
+#     # seasons = get_seasons()
+#     names_filename = prefix + '/names_' + series_name + '.txt'
+#     links_filename = prefix + '/links_' + series_name + '.txt'
+#     real_url = HOMEPAGE + SERIES_STRING + series_name
+
+#     """ Create download links if there isn't a links file or there is one but
+#     wasn't created the day the script is running, or there isn't a name file
+#     or there is one but wasn't created the day the script is running
+#     """
+#     if (created_today(links_filename) and created_today(names_filename)):
+#         print "Downloading.."
+#         download_all_links(links_filename, names_filename)
+#     else:
+#         watch_series_series_page = urllib2.urlopen(real_url)
+#         series_link = watch_series_series_page.readlines()
+#         watch_series_series_page.close()
+#         print "Creating list of episodes links..."
+#         episodes_list_links = create_list_episodes_links(series_link,
+#                 names_filename)
+#         print "Creating list of video hosters' links..."
+#         gorillavid_list_links = create_gorillavid_links_list(
+#                 episodes_list_links)
+#         print "Creating download links..."
+#         create_download_links(gorillavid_list_links,
+#                 links_filename)
+#         print "Downloading.."
+#         download_all_links(links_filename, names_filename)
+
 def main():
-    """ Downloads complete series from watchseries.
+    """TODO: Docstring for main.
+    :returns: TODO
+
     """
+    handle_inputs()
 
-    prefix = os.path.abspath('.')
-    series_name, seasons = get_input()
-    # series_name = create_series_name()
-    # seasons = get_seasons()
-    names_filename = prefix + '/names_' + series_name + '.txt'
-    links_filename = prefix + '/links_' + series_name + '.txt'
-    real_url = HOMEPAGE + SERIES_STRING + series_name
+def handle_inputs():
+    """TODO: Docstring for handle_inputs.
 
-    """ Create download links if there isn't a links file or there is one but
-    wasn't created the day the script is running, or there isn't a name file
-    or there is one but wasn't created the day the script is running
+    :returns a list of results
+
     """
-    if (not os.path.isfile(links_filename)
-            or os.path.isfile(links_filename)
-            and not created_today(links_filename)
-            or not os.path.isfile(names_filename)
-            or os.path.isfile(names_filename)
-            and not created_today(names_filename)):
-        watch_series_series_page = urllib2.urlopen(real_url)
-        series_link = watch_series_series_page.readlines()
-        watch_series_series_page.close()
+    parser = argparse.ArgumentParser(description="Download TV Series from not-so-legal websites")
+    parser.add_argument("-o", "--output", help="Select a directory (default: .)", default=".")
+    parser.add_argument("-s", "--season", help="Season number (default: all seasons)", type=int, default="0")
+    parser.add_argument("NAME", help="Series name (surround with \" if more than one word)")
+    args = parser.parse_args()
 
-        print "Creating list of episodes links..."
-        episodes_list_links = create_list_episodes_links(series_link,
-                names_filename)
+    # test if series exists, exit if not, disambiguate if more than one possibility
+    possible_series = get_possible_series(args.NAME)
+    if not possible_series:
+        print("Series \"{}\" was not found. Try a different name or a different one".format(args.NAME))
+        sys.exit(1)
 
-        print "Creating list of video hosters' links..."
-        gorillavid_list_links = create_gorillavid_links_list(
-                episodes_list_links)
+    chosen_series = choose_series(possible_series)
+    # chosen_series = args.NAME
 
-        print "Creating download links..."
-        create_download_links(gorillavid_list_links,
-                links_filename)
+    # choose dir if necessary
+    output_dir = "."
+    if args.output and args.output != ".":
+        output_dir = args.output
 
-    print "Downloading.."
-    download_all_links(links_filename, names_filename)
+    # select seasons
+    season = 0
+    if args.season:
+        season = args.season
+
+    print chosen_series, output_dir, season
+    return chosen_series, output_dir, season
+
+def get_possible_series(seriesname):
+    """TODO: Docstring for get_possible_series.
+
+    :seriesname: name of the series
+    :returns: TODO
+
+    """
+    # search
+    page = urllib3.urlopen(HOMEPAGE + '/search/' + urllib3.quote(seriesname))
+
+    # search using regular expressions
+    re.compile
+
+
+
 
 def created_today(filename):
     """ Returns true if file was created today, otherwise false
@@ -77,10 +131,11 @@ def created_today(filename):
     return: boolean
 
     """
+    if not os.path.isfile(filename):
+        return False
     file_time = os.path.getmtime(filename)
     time_struct = time.localtime(file_time)
     today_date = time.localtime()
-
     if (time_struct.tm_year == today_date.tm_year
             and time_struct.tm_mon == today_date.tm_mon
             and time_struct.tm_mday == today_date.tm_mday):
